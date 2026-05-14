@@ -53,9 +53,13 @@ func ProcessOrder(order models.Order) (models.Order, error) {
 }
 
 func GetOrders() ([]models.Order, error) {
-	return repository.GetAllOrders()
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	return repository.GetAllOrders(ctx)
 }
 
 func GetOrder(id string) (models.Order, error) {
-	return repository.GetOrderByID(id)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	return repository.GetOrderByID(ctx, id)
 }

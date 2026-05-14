@@ -2,11 +2,17 @@ package repository
 
 import (
 	"context"
+	"errors"
 	"project/db"
 	"project/models"
-	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
+)
+
+const (
+	DBName          = "shop"
+	OrderCollection = "orders"
 )
 
 func InsertOrder(ctx context.Context, order models.Order) error {
@@ -15,11 +21,8 @@ func InsertOrder(ctx context.Context, order models.Order) error {
 	return err
 }
 
-func GetAllOrders() ([]models.Order, error) {
+func GetAllOrders(ctx context.Context) ([]models.Order, error) {
 	collection := db.Client.Database("shop").Collection("orders")
-
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
 
 	cursor, err := collection.Find(ctx, bson.M{})
 	if err != nil {
@@ -38,19 +41,22 @@ func GetAllOrders() ([]models.Order, error) {
 		}
 		orders = append(orders, order)
 	}
+	if err := cursor.Err(); err != nil {
+		return nil, err
+	}
 	return orders, nil
 }
 
-func GetOrderByID(id string) (models.Order, error) {
-	collection := db.Client.Database("shop").Collection("orders")
-
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
+func GetOrderByID(ctx context.Context, id string) (models.Order, error) {
+	collection := db.Client.Database(DBName).Collection(OrderCollection)
 
 	var order models.Order
 
 	err := collection.FindOne(ctx, bson.M{"id": id}).Decode(&order)
 	if err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			return order, errors.New("order not found")
+		}
 		return order, err
 	}
 
