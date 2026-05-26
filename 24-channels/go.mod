@@ -1,4 +1,4 @@
-module goroutines
+module channles
 
 go 1.25.8
 
